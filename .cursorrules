@@ -1,0 +1,22 @@
+# Cursor Rules for Funny Image Generator Project
+
+## Package Manager
+- Always use `pnpm` as the package manager for this project
+- Use `pnpm install` instead of `npm install` or `yarn install`
+- Use `pnpm add` instead of `npm install` or `yarn add`
+- Use `pnpm dev` to start the development server
+
+## Project Structure
+- Keep source code organized in the `src/` directory
+- Use TypeScript for all new files
+- Follow Next.js 14+ conventions
+
+## Code Style
+- Use functional components with hooks
+- Prefer arrow functions for components
+- Use Tailwind CSS for styling
+- Keep API routes in `src/pages/api/` or `src/app/api/`
+
+## Environment Variables
+- Store sensitive data in `.env.local`
+- Never commit API keys to version control 
