@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getGrokTrendingTopics } from '@/utils/grokTrending'
 
 interface NewsItem {
   title: string
@@ -20,11 +21,22 @@ export async function GET() {
   try {
     const trends: TrendingTopic[] = []
     
-    // Option 1: Use NewsAPI (requires API key)
+    // Option 1: Grok curated trending topics
+    try {
+      const grokData = await getGrokTrendingTopics()
+      if (grokData && grokData.trends) {
+        trends.push(...grokData.trends)
+        console.log(`🤖 [GROK] Found ${grokData.trends.length} curated topics`)
+      }
+    } catch (error) {
+      console.log('⚠️ [GROK_ERROR]', error)
+    }
+
+    // Option 2: Use NewsAPI (requires API key)
     if (process.env.NEWS_API_KEY) {
       try {
         const newsResponse = await fetch(
-          `https://newsapi.org/v2/top-headlines?country=us&pageSize=10&apiKey=${process.env.NEWS_API_KEY}`
+          `https://newsapi.org/v2/top-headlines?country=us&pageSize=5&apiKey=${process.env.NEWS_API_KEY}`
         )
         
         if (newsResponse.ok) {
@@ -47,12 +59,12 @@ export async function GET() {
       }
     }
     
-    // Option 2: Hacker News API (free, no key needed)
+    // Option 3: Hacker News API (free, no key needed)
     try {
       const hnResponse = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json')
       if (hnResponse.ok) {
         const storyIds = await hnResponse.json()
-        const topStoryIds = storyIds.slice(0, 5) // Get top 5 stories
+        const topStoryIds = storyIds.slice(0, 3) // Get top 3 stories
         
         for (const storyId of topStoryIds) {
           try {
@@ -80,10 +92,10 @@ export async function GET() {
     } catch (error) {
       console.log('⚠️ [HACKER_NEWS_ERROR]', error)
     }
-    
-    // Option 3: Reddit API (trending subreddits - no key needed for basic access)
+
+    // Option 4: Reddit API (trending subreddits - no key needed for basic access)
     try {
-      const redditResponse = await fetch('https://www.reddit.com/r/popular.json?limit=5')
+      const redditResponse = await fetch('https://www.reddit.com/r/popular.json?limit=3')
       if (redditResponse.ok) {
         const redditData = await redditResponse.json()
         const posts = redditData.data?.children || []
@@ -119,33 +131,15 @@ export async function GET() {
         description: "Canine chefs teaching culinary arts",
         category: "animals",
         popularity: 9
-      },
-      {
-        topic: "AI becoming too polite",
-        description: "Artificial intelligence with excessive manners",
-        category: "tech",
-        popularity: 7
-      },
-      {
-        topic: "Millennials explaining TikTok to Gen Z",
-        description: "Generational reverse mentoring chaos",
-        category: "social",
-        popularity: 6
-      },
-      {
-        topic: "Coffee shop productivity theater",
-        description: "The art of looking busy while caffeinated",
-        category: "lifestyle",
-        popularity: 8
       }
     ]
     
-    // If no external trends found, use fallback
+    // If no trends found, use fallback
     if (trends.length === 0) {
       trends.push(...fallbackTopics)
       console.log('🎭 [FALLBACK] Using fallback funny topics')
-    } else {
-      // Mix in some fallback topics for variety
+    } else if (trends.length < 5) {
+      // Mix in fallback for variety
       trends.push(...fallbackTopics.slice(0, 2))
     }
     
@@ -159,7 +153,7 @@ export async function GET() {
     return NextResponse.json({
       trends: sortedTrends,
       timestamp: new Date().toISOString(),
-      sources: ['news', 'tech', 'social', 'fallback']
+      sources: ['grok', 'news', 'tech', 'social', 'fallback']
     })
     
   } catch (error) {
