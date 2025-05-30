@@ -68,12 +68,18 @@ export default function Home() {
 
   const generateImage = async (prompt: string) => {
     try {
+      // Get current trending data to pass to image generation
+      const currentTrending = trendingTopics.length > 0 ? trendingTopics[0] : null
+      
       const response = await fetch('/api/generate-image', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ 
+          prompt,
+          trendingData: currentTrending 
+        }),
       })
 
       if (!response.ok) {
