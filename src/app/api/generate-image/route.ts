@@ -64,13 +64,13 @@ export async function POST(request: NextRequest) {
           
           if (relevantTrends.length > 0) {
             const mostRelevant = relevantTrends[0]
-            trendingContext = `TRENDING NOW: "${mostRelevant.topic}" (${mostRelevant.description}). INCORPORATE THIS TREND: `
+            trendingContext = `Context for humor style: Current cultural moment involves "${mostRelevant.topic}" - ${mostRelevant.description}. Use this as background inspiration for comedic timing and cultural relevance, but focus on the user's actual request. `
             console.log(`🔥 [TRENDING_MATCH] Found relevant trend: "${mostRelevant.topic}"`)
           } else {
             // Use a random trending topic for inspiration
             const randomTrend = trends[Math.floor(Math.random() * Math.min(3, trends.length))]
             if (randomTrend) {
-              trendingContext = `CURRENT VIRAL TOPIC: "${randomTrend.topic}" - ${randomTrend.description}. MIX THIS IN FOR EXTRA HUMOR: `
+              trendingContext = `Background cultural context: "${randomTrend.topic}" - ${randomTrend.description}. Let this inspire the comedic style and cultural timing, but stay focused on the user's request. `
               console.log(`🎲 [TRENDING_RANDOM] Using random trend for inspiration: "${randomTrend.topic}"`)
             }
           }
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       
       const enhancePrompt = `${trendingContext}Transform this into a hilarious, viral-worthy image prompt: "${prompt}". 
 
-      ${trendingContext ? 'CRITICAL: Blend the trending topic above into the image concept for maximum viral potential and current relevance.' : ''}
+      ${trendingContext ? 'Draw inspiration from the current cultural moment for comedic style and timing, but keep the focus entirely on making the user\'s request as funny as possible.' : ''}
       
       Make it extremely funny, cartoonish, and whimsical. Add specific visual details like:
       - Absurd expressions and poses
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       - Ridiculous backgrounds or settings
       - Exaggerated features
       - Comic/cartoon style
-      - ${trendingContext ? 'Elements from the trending topic for viral appeal' : 'Current meme-worthy elements'}
+      - ${trendingContext ? 'Comedy that feels timely and culturally aware' : 'Current meme-worthy elements'}
       
       Keep it family-friendly but absolutely hilarious. Return ONLY the enhanced image prompt, no other text.`
 
@@ -164,10 +164,10 @@ export async function POST(request: NextRequest) {
       const descriptionPrompt = `${trendingContext}Create a hilarious and shareable description for this viral image based on: "${prompt}". 
       The image shows: ${enhancedPrompt}
       
-      ${trendingContext ? 'IMPORTANT: Reference the trending topic to make this description super timely and shareable on social media.' : ''}
+      ${trendingContext ? 'Use the current cultural moment as inspiration for the comedic style and timing, but focus entirely on describing what makes this image funny.' : ''}
       
       Make it extremely entertaining, use emojis, and describe what makes it so funny. 
-      Focus on viral potential and current relevance.
+      Focus on the humor in the image itself, not external references.
       Keep it family-friendly but absolutely hilarious. Maximum 2-3 sentences.`
       
       const descResponse = await ai.models.generateContent({
