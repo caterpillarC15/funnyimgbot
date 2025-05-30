@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, Image, Bot, User, Loader2 } from 'lucide-react'
+import { Send, Image, Bot, User, Loader2, TrendingUp, Sparkles } from 'lucide-react'
 
 interface Message {
   id: string
@@ -11,17 +11,26 @@ interface Message {
   timestamp: Date
 }
 
+interface TrendingTopic {
+  topic: string
+  description: string
+  category: string
+  popularity: number
+}
+
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       type: 'bot',
-      content: 'Hey there! 👋 I\'m your funny image generator. Describe something and I\'ll create a hilarious image for you!',
+      content: 'Hey there! 👋 I\'m your funny image generator. Describe something and I\'ll create a hilarious image for you! Or pick from trending topics below! 🔥',
       timestamp: new Date()
     }
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([])
+  const [loadingTrends, setLoadingTrends] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -31,6 +40,26 @@ export default function Home() {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // Fetch trending topics on component mount
+  useEffect(() => {
+    fetchTrendingTopics()
+  }, [])
+
+  const fetchTrendingTopics = async () => {
+    try {
+      setLoadingTrends(true)
+      const response = await fetch('/api/trending')
+      if (response.ok) {
+        const data = await response.json()
+        setTrendingTopics(data.trends || [])
+      }
+    } catch (error) {
+      console.error('Error fetching trending topics:', error)
+    } finally {
+      setLoadingTrends(false)
+    }
+  }
 
   const generateImage = async (prompt: string) => {
     try {
@@ -97,6 +126,32 @@ export default function Home() {
     }
   }
 
+  const handleTrendingClick = (topic: TrendingTopic) => {
+    setInput(topic.topic)
+  }
+
+  const getCategoryEmoji = (category: string) => {
+    switch (category) {
+      case 'news': return '📰'
+      case 'tech': return '💻'
+      case 'social': return '🔥'
+      case 'animals': return '🐾'
+      case 'lifestyle': return '☕'
+      default: return '✨'
+    }
+  }
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'news': return 'bg-red-500'
+      case 'tech': return 'bg-blue-500'
+      case 'social': return 'bg-orange-500'
+      case 'animals': return 'bg-green-500'
+      case 'lifestyle': return 'bg-purple-500'
+      default: return 'bg-gray-500'
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 p-4">
       <div className="max-w-4xl mx-auto">
@@ -108,6 +163,57 @@ export default function Home() {
           <p className="text-white/80">
             Powered by Gemini AI • Describe anything and get hilarious results!
           </p>
+        </div>
+
+        {/* Trending Topics Section */}
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-6 mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="w-5 h-5 text-white" />
+            <h2 className="text-xl font-bold text-white">🔥 Trending Topics</h2>
+            <button
+              onClick={fetchTrendingTopics}
+              disabled={loadingTrends}
+              className="ml-auto text-white/70 hover:text-white transition-colors"
+            >
+              {loadingTrends ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+          
+          {loadingTrends ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-white" />
+              <span className="ml-2 text-white/80">Fetching latest trends...</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {trendingTopics.slice(0, 6).map((topic, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleTrendingClick(topic)}
+                  className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl p-4 text-left transition-all duration-200 hover:scale-105 border border-white/10"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold text-white ${getCategoryColor(topic.category)}`}>
+                      {getCategoryEmoji(topic.category)} {topic.category}
+                    </span>
+                    <span className="text-xs text-white/60 font-mono">
+                      #{topic.popularity}
+                    </span>
+                  </div>
+                  <h3 className="text-white font-semibold text-sm mb-1 line-clamp-2">
+                    {topic.topic}
+                  </h3>
+                  <p className="text-white/70 text-xs line-clamp-2">
+                    {topic.description}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Chat Container */}

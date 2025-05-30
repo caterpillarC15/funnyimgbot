@@ -32,18 +32,63 @@ export async function POST(request: NextRequest) {
 
     let funnyDescription = ''
     let imageUrl = ''
+    let trendingContext = ''
 
     try {
-      // Step 1: Enhance the prompt for funnier image generation
+      // Step 1: Try to fetch trending context for enhanced relevance
+      console.log('📰 [TRENDING_CONTEXT] Fetching trending context...')
+      try {
+        const trendingResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/trending`)
+        if (trendingResponse.ok) {
+          const trendingData = await trendingResponse.json()
+          const trends = trendingData.trends || []
+          
+          // Find relevant trending topics based on the user's prompt
+          const relevantTrends = trends.filter((trend: any) => {
+            const promptLower = prompt.toLowerCase()
+            const topicLower = trend.topic.toLowerCase()
+            
+            // Check for keyword overlaps
+            const promptWords = promptLower.split(' ')
+            const topicWords = topicLower.split(' ')
+            
+            return promptWords.some((word: string) => 
+              word.length > 3 && topicWords.some((topicWord: string) => 
+                topicWord.includes(word) || word.includes(topicWord)
+              )
+            )
+          })
+          
+          if (relevantTrends.length > 0) {
+            const mostRelevant = relevantTrends[0]
+            trendingContext = `Current trending context: "${mostRelevant.topic}" (${mostRelevant.description}). `
+            console.log(`🔥 [TRENDING_MATCH] Found relevant trend: "${mostRelevant.topic}"`)
+          } else {
+            // Use a random trending topic for inspiration
+            const randomTrend = trends[Math.floor(Math.random() * Math.min(3, trends.length))]
+            if (randomTrend) {
+              trendingContext = `For extra humor, consider this trending topic: "${randomTrend.topic}". `
+              console.log(`🎲 [TRENDING_RANDOM] Using random trend for inspiration: "${randomTrend.topic}"`)
+            }
+          }
+        }
+      } catch (error) {
+        console.log('⚠️ [TRENDING_CONTEXT_ERROR]', error)
+      }
+
+      // Step 2: Enhance the prompt with trending context and funnier image generation
       console.log('🧠 [GEMINI_TEXT] Enhancing prompt with Gemini 2.0 Flash...')
       
-      const enhancePrompt = `Transform this into a hilarious, detailed image prompt for AI image generation: "${prompt}". 
+      const enhancePrompt = `${trendingContext}Transform this into a hilarious, detailed image prompt for AI image generation: "${prompt}". 
+      
       Make it extremely funny, cartoonish, and whimsical. Add specific visual details like:
       - Absurd expressions and poses
       - Funny clothing or accessories  
       - Ridiculous backgrounds or settings
       - Exaggerated features
       - Comic/cartoon style
+      - If relevant, incorporate current trends or references for extra humor
+      
       Keep it family-friendly but absolutely hilarious. Return ONLY the enhanced image prompt, no other text.`
 
       // Use text-only model for prompt enhancement
@@ -55,7 +100,7 @@ export async function POST(request: NextRequest) {
       const enhancedPrompt = textResponse.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || prompt
       console.log(`✨ [ENHANCED_PROMPT] "${enhancedPrompt}"`)
 
-      // Step 2: Generate image using NEW SDK syntax
+      // Step 3: Generate image using NEW SDK syntax
       console.log('🎨 [GEMINI_IMAGE] Generating image with NEW @google/genai SDK...')
       
       const finalPrompt = enhancedPrompt + ", cartoon style, funny, comedic, family-friendly, high quality, detailed, vibrant colors"
@@ -105,11 +150,13 @@ export async function POST(request: NextRequest) {
         console.log('🖼️ [PLACEHOLDER] Using placeholder while debugging')
       }
 
-      // Step 3: Generate funny description
+      // Step 4: Generate funny description with trending context
       console.log('📝 [GEMINI_DESC] Generating funny description...')
-      const descriptionPrompt = `Create a hilarious and witty description for this funny image based on: "${prompt}". 
+      const descriptionPrompt = `${trendingContext}Create a hilarious and witty description for this funny image based on: "${prompt}". 
       The image shows: ${enhancedPrompt}
+      
       Make it extremely entertaining, use emojis, and describe what makes it so funny. 
+      If there's trending context, incorporate subtle references to make it more timely and shareable.
       Keep it family-friendly but absolutely hilarious. Maximum 2-3 sentences.`
       
       const descResponse = await ai.models.generateContent({
@@ -133,7 +180,8 @@ export async function POST(request: NextRequest) {
       imageUrl,
       description: funnyDescription,
       prompt,
-      generatedBy: 'Gemini 2.0 Flash Exp (NEW SDK)'
+      generatedBy: 'Gemini 2.0 Flash Exp (NEW SDK)',
+      trendingContext: trendingContext ? 'Used trending context' : 'No trending context',
     })
 
   } catch (error) {
