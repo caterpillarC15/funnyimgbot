@@ -19,14 +19,7 @@ interface TrendingTopic {
 }
 
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      type: 'bot',
-      content: 'Hey there! 👋 I\'m your funny image generator. Describe something and I\'ll create a hilarious image for you! Or pick from trending topics below! 🔥',
-      timestamp: new Date()
-    }
-  ])
+  const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([])
@@ -40,6 +33,18 @@ export default function Home() {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // Initialize messages on client side to avoid hydration mismatch
+  useEffect(() => {
+    setMessages([
+      {
+        id: '1',
+        type: 'bot',
+        content: 'Hey there! 👋 I\'m your funny image generator. Describe something and I\'ll create a hilarious image for you! Or pick from trending topics below! 🔥',
+        timestamp: new Date()
+      }
+    ])
+  }, [])
 
   // Fetch trending topics on component mount
   useEffect(() => {
